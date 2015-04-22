@@ -5,6 +5,7 @@ show_progress(1.00000, 10);
 
 ui_print("Extracting binaries...");
 run_program("/sbin/busybox", "mount", "/data");
+run_program("/sbin/busybox", "mount", "/system");
 
 delete_recursive("/tmp/multirom");
 run_program("/sbin/busybox", "mkdir", "/tmp/multirom");
@@ -12,9 +13,11 @@ package_extract_dir("multirom", "/tmp/multirom/");
 package_extract_dir("scripts", "/tmp/");
 
 set_perm(0, 0, 0777, "/tmp/multirom/busybox");
+set_perm(0, 0, 0777, "/tmp/multirom/lz4");
 set_perm(0, 0, 0777, "/tmp/bbootimg");
 set_perm(0, 0, 0777, "/tmp/extract_multirom.sh");
 set_perm(0, 0, 0777, "/tmp/inject_boot.sh");
+set_perm(0, 0, 0775, "/tmp/loki_tool");
 
 assert(run_program("/tmp/extract_multirom.sh") == 0);
 ui_print("Injecting boot image...");
