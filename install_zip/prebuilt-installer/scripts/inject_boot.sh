@@ -13,6 +13,8 @@ if [ ! -e "$BOOT_DEV" ]; then
 fi
 
 dd if=$BOOT_DEV of=/tmp/boot.img
+/tmp/loki_tool unlok /tmp/boot.lok /tmp/boot.img
+rm /tmp/boot.lok
 /tmp/bbootimg -x /tmp/boot.img /tmp/bootimg.cfg /tmp/zImage /tmp/initrd.img /tmp/second.img /tmp/dtb.img
 if [ ! -f /tmp/zImage ] ; then
     echo "Failed to extract boot.img"
@@ -40,13 +42,8 @@ case "$magic" in
 esac
 
 if [ rd_cmpr == -1 ] || [ ! -f /tmp/boot/init ] ; then
-    echo "Failed to extract ramdisk! Trying to unloki boot.img and unpack it"
-    # Some devs still use loki, so let's unloki boot.img and then extract ramdisk
-    /tmp/unloki.sh
-    if [ rd_cmpr == -1 ] || [ ! -f /tmp/boot/init ] ; then
-        echo "Failed to unloki boot.img and extract ramdisk!"
-        return 1
-    fi
+    echo "Failed to extract ramdisk!"
+    return 1
 fi
 
 # copy trampoline
@@ -105,15 +102,12 @@ if [ ! -e "/tmp/newboot.img" ] ; then
     return 1
 fi
 
-# Bump boot.img - it's easier to unpack a bumped boot.img than a loki'd one
-cat newboot.img /tmp/sign > newboot_signed.img
-
-echo "Cleaning boot partition"
-
-dd if=/dev/zero of=$BOOT_DEV
-
 echo "Writing new boot.img..."
 
-dd if=/tmp/newboot_signed.img of=$BOOT_DEV
+# Loki and flash
+dd if=/dev/block/platform/msm_sdcc.1/by-name/aboot of=/tmp/aboot.img
+/tmp/loki_tool patch boot /tmp/aboot.img /tmp/newboot.img /tmp/newboot.lok || exit 1
+/tmp/loki_tool flash boot /tmp/newboot.lok || exit 1
 
 return $?
+
